@@ -1,0 +1,6 @@
+{
+  "name": "MIXON - Digital Laboratory",
+  "description": "Interactive digital laboratory for exploring matter, scientific properties, and simulated reactions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

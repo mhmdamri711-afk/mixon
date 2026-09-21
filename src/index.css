@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-display: 'Rajdhani', 'Chakra Petch', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-sans: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #020617;
+    color: #E0F2FE;
+    overflow-x: hidden;
+  }
+
+  /* Professional Arabic Typography & Cursive Letterform Preservation */
+  html[lang="ar"],
+  html[dir="rtl"],
+  [dir="rtl"] {
+    font-family: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', sans-serif;
+  }
+
+  /* Prevent letter-spacing from breaking Arabic character ligatures */
+  html[lang="ar"] .tracking-widest,
+  html[lang="ar"] .tracking-wider,
+  html[lang="ar"] .tracking-tight,
+  html[lang="ar"] .tracking-[0.25em],
+  [dir="rtl"] .tracking-widest,
+  [dir="rtl"] .tracking-wider,
+  [dir="rtl"] .tracking-[0.25em] {
+    letter-spacing: normal !important;
+  }
+
+  /* Arabic has no grammatical uppercase */
+  html[lang="ar"] .uppercase,
+  [dir="rtl"] .uppercase {
+    text-transform: none !important;
+  }
+
+  /* Custom subtle geometric scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #020617;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #0f172a;
+    border-radius: 4px;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #0284c7;
+  }
+}
+
+.font-display {
+  font-family: 'Rajdhani', 'Chakra Petch', sans-serif;
+}
+
+.font-tech {
+  font-family: 'Chakra Petch', sans-serif;
+}
+
+.font-code {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Geometric Balance glows, borders & background patterns */
+.glow-subtle-sky {
+  box-shadow: 0 0 20px -5px rgba(14, 165, 233, 0.25);
+}
+
+.glow-neon-sky {
+  box-shadow: 0 0 25px 0px rgba(56, 189, 248, 0.4);
+}
+
+.glow-text-sky {
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+}
+
+/* Geometric Dot Matrix Grid from Geometric Balance */
+.geometric-dot-grid {
+  background-color: #020617;
+  background-image: radial-gradient(#38bdf8 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.lab-grid {
+  background-color: #020617;
+  background-image: 
+    radial-gradient(rgba(56, 189, 248, 0.3) 1px, transparent 1px),
+    linear-gradient(to right, rgba(14, 165, 233, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(14, 165, 233, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px, 32px 32px, 32px 32px;
+}
+
+.lab-grid-dense {
+  background-size: 16px 16px;
+  background-image: 
+    linear-gradient(to right, rgba(56, 189, 248, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(56, 189, 248, 0.05) 1px, transparent 1px);
+}
+
