@@ -39,8 +39,8 @@ async function getRatingStats(
   userRating: number | null;
 }> {
   const { results } = await env.DB
-    .prepare("SELECT userId, rating FROM ratings")
-    .all<{ userId: string; rating: number }>();
+    .prepare("SELECT user_id, rating FROM ratings")
+    .all<{ user_id: string; rating: number }>();
 
   const rows = results || [];
 
@@ -55,7 +55,7 @@ async function getRatingStats(
   let userRating: number | null = null;
 
   if (userId) {
-    const userRow = rows.find((row) => row.userId === userId);
+    const userRow = rows.find((row) => row.user_id === userId);
 
     if (userRow) {
       userRating = userRow.rating;
@@ -78,15 +78,13 @@ export default {
   ): Promise<Response> {
     const url = new URL(request.url);
 
-    // 1. Ratings API
+    // Ratings API
     if (url.pathname === "/api/ratings") {
-      // GET current ratings directly from D1
       if (request.method === "GET") {
         const userId = url.searchParams.get("userId") || undefined;
 
         try {
           const stats = await getRatingStats(env, userId);
-
           return jsonResponse(stats, 200);
         } catch (dbErr: any) {
           return jsonResponse(
@@ -98,7 +96,6 @@ export default {
         }
       }
 
-      // POST / update rating
       if (request.method === "POST") {
         try {
           const body: any = await request.json().catch(() => ({}));
@@ -136,17 +133,15 @@ export default {
           const cleanUserId = userId.trim();
           const now = Date.now();
 
-          // Insert new rating or update existing user's rating.
           await env.DB.prepare(
-            `INSERT INTO ratings (userId, rating, updatedAt)
+            `INSERT INTO ratings (user_id, rating, updated_at)
              VALUES (?1, ?2, ?3)
-             ON CONFLICT(userId)
-             DO UPDATE SET rating = ?2, updatedAt = ?3`
+             ON CONFLICT(user_id)
+             DO UPDATE SET rating = ?2, updated_at = ?3`
           )
             .bind(cleanUserId, cleanRating, now)
             .run();
 
-          // Always calculate the aggregate again directly from D1.
           const stats = await getRatingStats(env, cleanUserId);
 
           return jsonResponse(stats, 200);
@@ -168,7 +163,7 @@ export default {
       );
     }
 
-    // 2. Other API routes
+    // Other API routes
     if (url.pathname.startsWith("/api/")) {
       return jsonResponse(
         {
@@ -179,11 +174,10 @@ export default {
       );
     }
 
-    // 3. Static assets
+    // Static assets
     const response = await env.ASSETS.fetch(request);
 
-    // 4. SPA fallback only for routes without file extensions.
-    //    JPG, PNG, SVG, CSS, JS, etc. must return their actual files.
+    // SPA fallback only for routes without file extensions.
     if (
       response.status === 404 &&
       !url.pathname.split("/").pop()?.includes(".")
