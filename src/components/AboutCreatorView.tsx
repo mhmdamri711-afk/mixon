@@ -2,6 +2,7 @@ import React from 'react';
 import { AppLanguage, TRANSLATIONS } from '../utils/i18n';
 import { Sparkles, Code2, Compass, Award, Rocket, CheckCircle2, ChevronRight, Terminal, Heart } from 'lucide-react';
 import { labSound } from '../utils/sound';
+import { RatingSystem } from './RatingSystem';
 
 interface AboutCreatorViewProps {
   lang: AppLanguage;
@@ -100,6 +101,9 @@ export const AboutCreatorView: React.FC<AboutCreatorViewProps> = ({
           })}
         </div>
       </div>
+
+      {/* Platform Evaluation & Rating System */}
+      <RatingSystem lang={lang} />
 
       {/* Laboratory Signature Card */}
       <div className="p-6 rounded-2xl bg-[#020617] border border-sky-900/70 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">

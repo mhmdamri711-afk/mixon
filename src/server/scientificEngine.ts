@@ -1,5 +1,5 @@
 import { INITIAL_MATERIALS } from '../data/materialsData';
-import { KNOWN_REACTIONS } from '../data/reactionsData';
+import { KNOWN_REACTIONS, getReaction } from '../data/reactionsData';
 import { Material, ReactionResult } from '../types';
 
 export interface ChatHistoryItem {
@@ -1225,6 +1225,22 @@ export const ELEMENT_SYNONYMS: Record<string, string> = {
   'صدأ': 'iron'
 };
 
+// Dynamically auto-seed all database materials into ELEMENT_SYNONYMS
+for (const m of INITIAL_MATERIALS) {
+  const normId = m.id.toLowerCase();
+  ELEMENT_SYNONYMS[normId] = m.id;
+  ELEMENT_SYNONYMS[m.name.toLowerCase()] = m.id;
+  if (m.symbol) {
+    ELEMENT_SYNONYMS[m.symbol.toLowerCase()] = m.id;
+  }
+  if (m.nameAr) {
+    ELEMENT_SYNONYMS[m.nameAr] = m.id;
+    if (m.nameAr.startsWith('ال')) {
+      ELEMENT_SYNONYMS[m.nameAr.slice(2)] = m.id;
+    }
+  }
+}
+
 // Quick helper to normalize Arabic/English strings for matching
 export function normalizeQueryText(text: string): string {
   if (!text) return '';
@@ -1317,15 +1333,16 @@ export function isGreetingQuery(norm: string): boolean {
 
 // Helper to detect gibberish, single letters, or unrecognizable non-words
 export function isGibberishOrSingleChar(query: string, norm: string): boolean {
-  const trimmed = query.trim();
+  const trimmed = query.trim().toLowerCase();
   if (trimmed.length <= 1) return true;
-  // Common nonsense spam like "asdf", "qwerty", "zxcv", "hjkl"
+  // Keyboard mashing patterns like "asdfghjk", "qwertyuiop", "zxcvbnm"
+  if (/^(asdf|qwerty|zxcv|hjkl|jkl;|lkjh|qazwsx|12345)/.test(trimmed)) return true;
   const spamList = ['asdf', 'fdsa', 'qwer', 'qwerty', 'zxcv', 'hjkl', 'jkl', 'test', 'aaa', 'bbb', 'xyz', 'foo', 'bar'];
-  if (spamList.includes(trimmed.toLowerCase())) return true;
-  // If short alphabetical string with no vowels and not an element symbol
-  if (/^[a-z]{2,5}$/i.test(trimmed)) {
-    const validSymbols = ['fe', 'cu', 'au', 'na', 'h2o', 'co2', 'o2', 'nh3', 'ti', 'ag', 'al', 'zn', 'mg', 'ca', 'k'];
-    if (!validSymbols.includes(trimmed.toLowerCase()) && !/[aeiouy]/i.test(trimmed)) {
+  if (spamList.includes(trimmed)) return true;
+  // If alphabetical string with no vowels and not an element symbol
+  if (/^[a-z]{2,12}$/i.test(trimmed)) {
+    const validSymbols = ['fe', 'cu', 'au', 'na', 'h2o', 'co2', 'o2', 'nh3', 'ti', 'ag', 'al', 'zn', 'mg', 'ca', 'k', 'he', 'ne', 'ar', 'kr', 'xe', 'rn', 'cl2', 'br2', 'i2', 'n2', 'h2'];
+    if (!validSymbols.includes(trimmed) && !/[aeiouy]/i.test(trimmed)) {
       return true;
     }
   }
@@ -1747,35 +1764,57 @@ You can simulate this reaction directly inside MIX LAB by placing **Iron** in Sl
     }
   }
 
-  // Check known reactions in data
+  // Check reactions using the verified reaction engine
   if (idA && idB) {
-    const rx = KNOWN_REACTIONS.find(
-      r => (r.inputA === idA && r.inputB === idB) || (r.inputA === idB && r.inputB === idA)
-    );
+    const matA = INITIAL_MATERIALS.find(m => m.id === idA);
+    const matB = INITIAL_MATERIALS.find(m => m.id === idB);
 
-    if (rx) {
-      if (isArabic) {
-        return `### ناتج تفاعل ${idA.toUpperCase()} مع ${idB.toUpperCase()}:
+    if (matA && matB) {
+      const rx = getReaction(matA, matB);
 
-- **اسم المركب الناتج:** **${rx.outputName}**
-- **المعادلة الكيميائية:** \`${rx.outputFormula}\`
+      if (rx.hasOccurred !== false) {
+        if (isArabic) {
+          return `### ناتج تفاعل ${matA.nameAr || matA.name} مع ${matB.nameAr || matB.name}:
+
+- **اسم المركب الناتج:** **${rx.outputNameAr || rx.outputName}**
+- **المعادلة الكيميائية:** \`${rx.balancedEquation || rx.outputFormula}\`
 - **نوع التفاعل:** ${rx.reactionType}
 - **تغير الطاقة:** ${rx.energyChange}
 - **التغير البصري الملاحظ:** ${rx.observedChange}
 - **مصفوفة الروابط الجزيئية:** ${rx.molecularTransformation}
 
 يمكنك تشغيل هذا التفاعل مباشرة في غرفة محاكاة MIX LAB بمجرد اختيار المادتين والضغط على زر **COMBINE**!`;
-      } else {
-        return `### Reaction: ${idA.toUpperCase()} + ${idB.toUpperCase()}
+        } else {
+          return `### Reaction: ${matA.name} + ${matB.name}
 
 - **Synthesized Product:** **${rx.outputName}**
-- **Chemical Formula / Equation:** \`${rx.outputFormula}\`
+- **Balanced Chemical Equation:** \`${rx.balancedEquation || rx.outputFormula}\`
 - **Reaction Classification:** ${rx.reactionType}
 - **Thermodynamic Energy Change:** ${rx.energyChange}
-- **Observed Physical Transformation:** ${rx.observedChange}
+- **Observed Transformation:** ${rx.observedChange}
 - **Molecular Bonding Matrix:** ${rx.molecularTransformation}
 
 You can execute this reaction inside the MIX LAB chamber right now by loading both materials and clicking **COMBINE**!`;
+        }
+      } else {
+        // Scientifically grounded non-reaction explanation
+        if (isArabic) {
+          return `### فحص إمكانية التفاعل بين ${matA.nameAr || matA.name} و ${matB.nameAr || matB.name}:
+
+- **النتيجة المخبرية:** **لا يحدث تفاعل كيميائي تلقائي** (No Chemical Reaction).
+- **السبب العلمي:** ${rx.noReactionReason || rx.observedChange}
+- **الحالة الناتجة:** خليط فيزيائي مستقر دون تكوين روابط كيميائية جديدة (${rx.outputState}).
+
+💡 *في الكيمياء الدقيقة، المواد النبيلة أو المستقرة إلكترونياً لا تتبادل الإلكترونات في الظروف القياسية بدون محفزات قاهرة.*`;
+        } else {
+          return `### Reaction Feasibility: ${matA.name} + ${matB.name}
+
+- **Experimental Outcome:** **No Chemical Reaction Occurs** (Thermodynamically Inactive).
+- **Scientific Analysis:** ${rx.noReactionReason || rx.observedChange}
+- **Resulting State:** Stable physical mixture without chemical bond rearrangement (${rx.outputState}).
+
+💡 *Under standard laboratory conditions, chemically inert elements or stable configurations do not spontaneously exchange valence electrons.*`;
+        }
       }
     }
   }

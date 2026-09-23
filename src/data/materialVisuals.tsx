@@ -10,6 +10,17 @@ export const MaterialVisualThumbnail: React.FC<MaterialVisualProps> = ({ id, cla
   const s = size;
   const key = id.toLowerCase().trim();
 
+  if (key.startsWith('no_rx')) {
+    return (
+      <svg width={s} height={s} viewBox="0 0 100 100" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="36" cy="50" r="22" fill="#64748b" fillOpacity="0.4" stroke="#94a3b8" strokeWidth="2" strokeDasharray="3 3" />
+        <circle cx="64" cy="50" r="22" fill="#475569" fillOpacity="0.4" stroke="#94a3b8" strokeWidth="2" strokeDasharray="3 3" />
+        <line x1="50" y1="26" x2="50" y2="74" stroke="#e2e8f0" strokeWidth="1.5" strokeOpacity="0.7" strokeDasharray="2 2" />
+        <circle cx="50" cy="50" r="5" fill="#f59e0b" fillOpacity="0.8" />
+      </svg>
+    );
+  }
+
   switch (key) {
     // =========================================================================
     // 1. LIQUIDS

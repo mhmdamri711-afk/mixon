@@ -28,8 +28,8 @@ export interface Material {
   meltingPoint: string; // e.g. "1085 °C"
   boilingPoint: string; // e.g. "2562 °C"
   appearance: string;
-  conductivity: 'High' | 'Medium' | 'Low' | 'Non-conductive' | 'Superconductor';
-  reactivity: 'Very High' | 'High' | 'Moderate' | 'Low' | 'Inert';
+  conductivity: 'High' | 'Medium' | 'Low' | 'Non-conductive' | 'Superconductor' | (string & {});
+  reactivity: 'Very High' | 'High' | 'Moderate' | 'Low' | 'Very Low' | 'Inert' | (string & {});
   oxidationStates: string;
   chemicalBehavior: string;
   interestingFacts: string[];
@@ -68,22 +68,91 @@ export interface Material {
   };
 }
 
+export type ReactionStatus = 
+  | 'VERIFIED_REACTION'
+  | 'CONDITION_REQUIRED'
+  | 'PHYSICAL_MIXTURE'
+  | 'NO_VERIFIED_REACTION'
+  | 'INSUFFICIENT_DATA'
+  | 'Chemical Reaction'
+  | 'Known chemical reaction'
+  | 'No Reaction / Physical Mixture'
+  | 'No reaction'
+  | 'Physical mixture/contact'
+  | 'Condition-Dependent Reaction'
+  | 'Not a Defined Chemical Substance / State Simulation';
+
+export type RepresentationType = 
+  | 'molecular'
+  | 'ionic_lattice'
+  | 'metallic_lattice'
+  | 'network_solid'
+  | 'polymer'
+  | 'plasma'
+  | 'hydrated_ions'
+  | 'mixture';
+
+export interface ReactionParticipant {
+  id: string;
+  name: string;
+  nameAr?: string;
+  formula: string;
+  state: MatterState;
+}
+
+export interface ReactionEnvironmentConditions {
+  temperature?: number; // Celsius
+  pressure?: number; // atm
+  hasHeatSource?: boolean;
+  heatingRequired?: boolean;
+  solvent?: 'none' | 'water' | 'aqueous' | string;
+  catalyst?: string;
+  hasCatalyst?: boolean;
+  oxygenAvailable?: boolean;
+  concentration?: string;
+  description?: string;
+  descriptionAr?: string;
+  minTemperature?: number;
+  maxTemperature?: number;
+  minPressure?: number;
+  requiredCatalyst?: string;
+}
+
 export interface ReactionResult {
   id: string;
   inputA: string;
   inputB: string;
+  reactants?: ReactionParticipant[];
   outputName: string;
+  outputNameAr?: string;
   outputFormula: string;
   outputState: MatterState;
+  products?: ReactionParticipant[];
   colorHex: string;
   reactionType: string;
-  energyChange: string; // e.g. "Exothermic (ΔH = -310 kJ/mol)"
+  reactionTypeAr?: string;
+  reactionStatus?: ReactionStatus;
+  reactionStatusAr?: string;
+  energyChange: string; // e.g. "Exothermic (ΔH = -57.3 kJ/mol)" or "Not available / Not calculated" or "N/A"
   energyValue: number; // numeric approximation for challenge checks
+  deltaH?: number | 'N/A';
+  deltaG?: number | 'N/A';
   observedChange: string;
+  observedChangeAr?: string;
   molecularTransformation: string;
+  molecularTransformationAr?: string;
+  scientificExplanation?: string;
+  scientificExplanationAr?: string;
+  representationType?: RepresentationType;
   safetyNotice?: string;
   isSimulatedOnlyNotice?: boolean;
   unlockedTrivia?: string;
+  unlockedTriviaAr?: string;
+  scientificallyVerified?: boolean;
+  hasOccurred?: boolean; // false when no verified chemical reaction occurs
+  noReactionReason?: string;
+  balancedEquation?: string;
+  conditions?: ReactionEnvironmentConditions;
 }
 
 export interface ExperimentHistoryItem {

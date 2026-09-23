@@ -126,12 +126,17 @@ export const MixLabView: React.FC<MixLabViewProps> = ({
     // 2. colliding & bonding (1.2s - 2.4s)
     setTimeout(() => {
       setSimulationPhase('bonded');
-      const res = getReaction(selectedSlotA, selectedSlotB);
+      const envConditions = { 
+        temperature, 
+        pressure, 
+        hasHeatSource: temperature >= 200 
+      };
+      const res = getReaction(selectedSlotA, selectedSlotB, envConditions);
       setCurrentResult(res);
       labSound.playReactionSuccess();
 
       // Trigger subtle celebratory particle confetti on significant reactions
-      if (res.energyValue > 200) {
+      if (res.hasOccurred !== false && res.energyValue > 200) {
         try {
           confetti({
             particleCount: 40,
@@ -147,7 +152,12 @@ export const MixLabView: React.FC<MixLabViewProps> = ({
     setTimeout(() => {
       setSimulationPhase('complete');
       setIsSimulating(false);
-      const res = getReaction(selectedSlotA, selectedSlotB);
+      const envConditions = { 
+        temperature, 
+        pressure, 
+        hasHeatSource: temperature >= 200 
+      };
+      const res = getReaction(selectedSlotA, selectedSlotB, envConditions);
       onReactionFinished(res, selectedSlotA, selectedSlotB);
     }, 3000);
   };
@@ -648,16 +658,49 @@ export const MixLabView: React.FC<MixLabViewProps> = ({
               {/* Result Header */}
               <div className="pb-3 border-b border-sky-900/50 flex items-start justify-between gap-3">
                 <div>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-950 border border-sky-800 text-[10px] font-mono text-sky-400 tracking-wider uppercase mb-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
-                    <span>{t.simulationComplete}</span>
-                  </div>
+                  {currentResult.reactionStatus === 'CONDITION_REQUIRED' ? (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-950/80 border border-amber-700 text-[10px] font-mono text-amber-300 tracking-wider uppercase mb-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                      <span className="font-semibold">{lang === 'ar' ? (currentResult.reactionStatusAr || 'تفاعل مشروط بتوفر متطلبات (CONDITION_REQUIRED)') : 'CONDITION REQUIRED'}</span>
+                    </div>
+                  ) : currentResult.reactionStatus === 'PHYSICAL_MIXTURE' ? (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-900 border border-cyan-800/80 text-[10px] font-mono text-cyan-300 tracking-wider uppercase mb-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                      <span className="font-semibold">{lang === 'ar' ? (currentResult.reactionStatusAr || 'مزيج فيزيائي / تلامس (PHYSICAL_MIXTURE)') : 'PHYSICAL MIXTURE'}</span>
+                    </div>
+                  ) : currentResult.reactionStatus === 'NO_VERIFIED_REACTION' ? (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-[10px] font-mono text-slate-300 tracking-wider uppercase mb-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                      <span className="font-semibold">{lang === 'ar' ? (currentResult.reactionStatusAr || 'لا يوجد تفاعل كيميائي مثبت (NO_VERIFIED_REACTION)') : 'NO VERIFIED REACTION'}</span>
+                    </div>
+                  ) : currentResult.reactionStatus === 'INSUFFICIENT_DATA' ? (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-950/70 border border-rose-800 text-[10px] font-mono text-rose-300 tracking-wider uppercase mb-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                      <span className="font-semibold">{lang === 'ar' ? (currentResult.reactionStatusAr || 'بيانات غير كافية (INSUFFICIENT_DATA)') : 'INSUFFICIENT DATA'}</span>
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-700 text-[10px] font-mono text-emerald-300 tracking-wider uppercase mb-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                      <span className="font-semibold">{lang === 'ar' ? (currentResult.reactionStatusAr || 'تفاعل كيميائي مثبت (VERIFIED_REACTION)') : 'VERIFIED CHEMICAL REACTION'}</span>
+                    </div>
+                  )}
                   <h3 className="font-display font-bold text-xl text-white tracking-wide">
-                    {currentResult.outputName}
+                    {(lang === 'ar' && currentResult.outputNameAr) || currentResult.outputName}
                   </h3>
                   <div className="font-mono text-xs text-sky-400 font-semibold mt-0.5">
                     {currentResult.outputFormula}
                   </div>
+                  {/* Do not display balanced equation if no reaction occurred */}
+                  {currentResult.hasOccurred !== false && currentResult.balancedEquation && !currentResult.balancedEquation.toLowerCase().includes('no reaction') && (
+                    <div className="mt-1.5 px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800/80 font-mono text-[11px]">
+                      <span className="text-[9px] text-slate-400 uppercase block font-semibold">
+                        {lang === 'ar' ? 'المعادلة الكيميائية الموزونة:' : 'Balanced Chemical Equation:'}
+                      </span>
+                      <span className="text-sky-300 font-semibold">
+                        {currentResult.balancedEquation}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="w-14 h-14 rounded-xl bg-sky-950/80 border border-amber-400/60 shadow-[0_0_15px_rgba(251,191,36,0.3)] flex items-center justify-center p-1 flex-shrink-0">
@@ -667,6 +710,18 @@ export const MixLabView: React.FC<MixLabViewProps> = ({
 
               {/* Observed Change */}
               <div className="py-3 space-y-3 flex-1 text-xs">
+                {currentResult.noReactionReason && (
+                  <div className="p-2.5 rounded-lg bg-amber-950/20 border border-amber-900/40 text-[11px] text-slate-200">
+                    <div className="font-mono text-[9px] text-amber-400 uppercase tracking-widest font-bold mb-1 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                      <span>{lang === 'ar' ? 'التفسير العلمي لعدم التفاعل:' : 'Scientific Explanation:'}</span>
+                    </div>
+                    <p className="leading-relaxed">
+                      {currentResult.noReactionReason}
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <div className="font-mono text-[10px] text-sky-500 uppercase tracking-widest mb-1">
                     {t.observedChange}
@@ -679,7 +734,9 @@ export const MixLabView: React.FC<MixLabViewProps> = ({
                 {/* Properties Key-Values */}
                 <div className="grid grid-cols-2 gap-2 font-mono">
                   <div className="p-2 rounded bg-sky-950/30 border border-sky-900/50">
-                    <span className="text-sky-600 block text-[9px] uppercase">{t.productState}</span>
+                    <span className="text-sky-600 block text-[9px] uppercase">
+                      {currentResult.hasOccurred === false ? (lang === 'ar' ? 'حالة المواد' : 'Reactants State') : t.productState}
+                    </span>
                     <span className="text-sky-200 font-bold">{currentResult.outputState}</span>
                   </div>
                   <div className="p-2 rounded bg-sky-950/30 border border-sky-900/50">

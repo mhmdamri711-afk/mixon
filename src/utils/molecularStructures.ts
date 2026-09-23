@@ -16,7 +16,7 @@ export interface Bond3D {
   from: string;
   to: string;
   order: 1 | 2 | 3;
-  type: 'covalent' | 'ionic' | 'metallic' | 'hydrogen';
+  type: 'covalent' | 'ionic' | 'metallic' | 'hydrogen' | 'dipole';
   lengthAngstroms?: number;
 }
 
@@ -24,7 +24,8 @@ export interface MolecularData {
   id: string;
   name: string;
   formula: string;
-  category: 'element' | 'diatomic' | 'molecule' | 'crystal' | 'ionic';
+  category: 'element' | 'diatomic' | 'molecule' | 'crystal' | 'ionic' | 'metallic' | 'network' | 'polymer' | 'plasma' | 'hydrated_ions';
+  representationType?: string;
   description: string;
   geometry: string;
   bondAngle?: string;
@@ -387,6 +388,188 @@ export const PRESET_STRUCTURES: Record<string, MolecularData> = {
       { from: 'O3', to: 'H1', order: 1, type: 'covalent', lengthAngstroms: 0.98 },
       { from: 'Na1', to: 'O2', order: 1, type: 'ionic', lengthAngstroms: 2.40 },
     ]
+  },
+
+  // --- SODIUM CHLORIDE IN AQUEOUS SOLUTION [NaCl(aq)] ---
+  nacl_aq: {
+    id: 'nacl_aq',
+    name: 'Hydrated Sodium & Chloride Ions [NaCl(aq)]',
+    formula: 'Na⁺(aq) + Cl⁻(aq)',
+    category: 'hydrated_ions',
+    representationType: 'hydrated_ions',
+    description: 'Completely dissociated sodium cations (Na⁺) and chloride anions (Cl⁻) solvated and dispersed in water, stabilized by dynamic hydration shells. Not a monatomic molecule.',
+    geometry: 'Hydrated Dissociated Ions in Aqueous Solution',
+    bondAngle: 'Variable (Solvation Dipole)',
+    dipoleMoment: 'Solvated Electrolyte Ions',
+    atoms: [
+      { id: 'Na1', element: 'Na', name: 'Hydrated Sodium Ion (Na⁺)', position: [-2.2, 0, 0], color: '#8b5cf6', radius: 0.85, vdwRadius: 1.8, atomicNumber: 11, electronegativity: 0.93, valenceElectrons: 0, charge: '+1' },
+      { id: 'Cl1', element: 'Cl', name: 'Hydrated Chloride Ion (Cl⁻)', position: [2.2, 0, 0], color: '#22c55e', radius: 1.05, vdwRadius: 1.75, atomicNumber: 17, electronegativity: 3.16, valenceElectrons: 8, charge: '-1' },
+      { id: 'O_w1', element: 'O', name: 'Water Oxygen', position: [-2.2, 1.8, 0], color: '#ef4444', radius: 0.6, vdwRadius: 1.52, atomicNumber: 8, electronegativity: 3.44, valenceElectrons: 6, charge: 'δ⁻' },
+      { id: 'H_w1a', element: 'H', name: 'Water Hydrogen', position: [-2.8, 2.3, 0], color: '#f8fafc', radius: 0.4, vdwRadius: 1.1, atomicNumber: 1, electronegativity: 2.20, valenceElectrons: 1, charge: 'δ⁺' },
+      { id: 'H_w1b', element: 'H', name: 'Water Hydrogen', position: [-1.6, 2.3, 0], color: '#f8fafc', radius: 0.4, vdwRadius: 1.1, atomicNumber: 1, electronegativity: 2.20, valenceElectrons: 1, charge: 'δ⁺' },
+      { id: 'O_w2', element: 'O', name: 'Water Oxygen', position: [2.2, -1.8, 0], color: '#ef4444', radius: 0.6, vdwRadius: 1.52, atomicNumber: 8, electronegativity: 3.44, valenceElectrons: 6, charge: 'δ⁻' },
+      { id: 'H_w2a', element: 'H', name: 'Water Hydrogen', position: [1.8, -1.0, 0], color: '#f8fafc', radius: 0.4, vdwRadius: 1.1, atomicNumber: 1, electronegativity: 2.20, valenceElectrons: 1, charge: 'δ⁺' },
+      { id: 'H_w2b', element: 'H', name: 'Water Hydrogen', position: [2.6, -1.0, 0], color: '#f8fafc', radius: 0.4, vdwRadius: 1.1, atomicNumber: 1, electronegativity: 2.20, valenceElectrons: 1, charge: 'δ⁺' },
+    ],
+    bonds: [
+      { from: 'O_w1', to: 'H_w1a', order: 1, type: 'covalent', lengthAngstroms: 0.96 },
+      { from: 'O_w1', to: 'H_w1b', order: 1, type: 'covalent', lengthAngstroms: 0.96 },
+      { from: 'O_w2', to: 'H_w2a', order: 1, type: 'covalent', lengthAngstroms: 0.96 },
+      { from: 'O_w2', to: 'H_w2b', order: 1, type: 'covalent', lengthAngstroms: 0.96 },
+      { from: 'Na1', to: 'O_w1', order: 1, type: 'dipole', lengthAngstroms: 2.20 },
+      { from: 'Cl1', to: 'H_w2a', order: 1, type: 'dipole', lengthAngstroms: 2.10 }
+    ]
+  },
+
+  // --- MAGNESIUM OXIDE (MgO Periclase) ---
+  mgo: {
+    id: 'mgo',
+    name: 'Magnesium Oxide',
+    formula: 'MgO',
+    category: 'ionic',
+    representationType: 'ionic_lattice',
+    description: 'Refractory rock-salt cubic ionic lattice where Mg²⁺ and O²⁻ ions alternate octahedrally.',
+    geometry: 'Cubic Rock-Salt Ionic Lattice (Fm-3m)',
+    bondAngle: '90.0°',
+    dipoleMoment: 'Ionic Crystal',
+    atoms: [
+      { id: 'Mg1', element: 'Mg', name: 'Magnesium', position: [0, 0, 0], color: '#a855f7', radius: 0.85, vdwRadius: 1.73, atomicNumber: 12, electronegativity: 1.31, valenceElectrons: 2, charge: '+2' },
+      { id: 'O1', element: 'O', name: 'Oxygen', position: [1.8, 0, 0], color: '#ef4444', radius: 0.65, vdwRadius: 1.52, atomicNumber: 8, electronegativity: 3.44, valenceElectrons: 6, charge: '-2' },
+      { id: 'O2', element: 'O', name: 'Oxygen', position: [-1.8, 0, 0], color: '#ef4444', radius: 0.65, vdwRadius: 1.52, atomicNumber: 8, electronegativity: 3.44, valenceElectrons: 6, charge: '-2' },
+      { id: 'O3', element: 'O', name: 'Oxygen', position: [0, 1.8, 0], color: '#ef4444', radius: 0.65, vdwRadius: 1.52, atomicNumber: 8, electronegativity: 3.44, valenceElectrons: 6, charge: '-2' },
+      { id: 'O4', element: 'O', name: 'Oxygen', position: [0, -1.8, 0], color: '#ef4444', radius: 0.65, vdwRadius: 1.52, atomicNumber: 8, electronegativity: 3.44, valenceElectrons: 6, charge: '-2' },
+      { id: 'Mg2', element: 'Mg', name: 'Magnesium', position: [1.8, 1.8, 0], color: '#a855f7', radius: 0.85, vdwRadius: 1.73, atomicNumber: 12, electronegativity: 1.31, valenceElectrons: 2, charge: '+2' }
+    ],
+    bonds: [
+      { from: 'Mg1', to: 'O1', order: 1, type: 'ionic', lengthAngstroms: 2.10 },
+      { from: 'Mg1', to: 'O2', order: 1, type: 'ionic', lengthAngstroms: 2.10 },
+      { from: 'Mg1', to: 'O3', order: 1, type: 'ionic', lengthAngstroms: 2.10 },
+      { from: 'Mg1', to: 'O4', order: 1, type: 'ionic', lengthAngstroms: 2.10 },
+      { from: 'O1', to: 'Mg2', order: 1, type: 'ionic', lengthAngstroms: 2.10 },
+      { from: 'O3', to: 'Mg2', order: 1, type: 'ionic', lengthAngstroms: 2.10 }
+    ]
+  },
+
+  // --- CALCIUM OXIDE (CaO Quicklime) ---
+  cao: {
+    id: 'cao',
+    name: 'Calcium Oxide',
+    formula: 'CaO',
+    category: 'ionic',
+    representationType: 'ionic_lattice',
+    description: 'Cubic rock-salt crystalline structure composed of Ca²⁺ cations and O²⁻ oxide anions.',
+    geometry: 'Cubic Rock-Salt Ionic Lattice',
+    bondAngle: '90.0°',
+    dipoleMoment: 'Ionic Crystal',
+    atoms: [
+      { id: 'Ca1', element: 'Ca', name: 'Calcium', position: [0, 0, 0], color: '#0284c7', radius: 1.0, vdwRadius: 2.0, atomicNumber: 20, electronegativity: 1.00, valenceElectrons: 2, charge: '+2' },
+      { id: 'O1', element: 'O', name: 'Oxygen', position: [2.0, 0, 0], color: '#ef4444', radius: 0.65, vdwRadius: 1.52, atomicNumber: 8, electronegativity: 3.44, valenceElectrons: 6, charge: '-2' },
+      { id: 'O2', element: 'O', name: 'Oxygen', position: [-2.0, 0, 0], color: '#ef4444', radius: 0.65, vdwRadius: 1.52, atomicNumber: 8, electronegativity: 3.44, valenceElectrons: 6, charge: '-2' },
+      { id: 'Ca2', element: 'Ca', name: 'Calcium', position: [2.0, 2.0, 0], color: '#0284c7', radius: 1.0, vdwRadius: 2.0, atomicNumber: 20, electronegativity: 1.00, valenceElectrons: 2, charge: '+2' },
+    ],
+    bonds: [
+      { from: 'Ca1', to: 'O1', order: 1, type: 'ionic', lengthAngstroms: 2.40 },
+      { from: 'Ca1', to: 'O2', order: 1, type: 'ionic', lengthAngstroms: 2.40 },
+      { from: 'O1', to: 'Ca2', order: 1, type: 'ionic', lengthAngstroms: 2.40 },
+    ]
+  },
+
+  // --- CALCIUM HYDROXIDE [Ca(OH)2 Slaked Lime] ---
+  ca_oh2: {
+    id: 'ca_oh2',
+    name: 'Calcium Hydroxide',
+    formula: 'Ca(OH)₂',
+    category: 'ionic',
+    representationType: 'ionic_lattice',
+    description: 'Hexagonal layer-lattice structure (portlandite) containing Ca²⁺ layers coordinated by hydroxide [OH]⁻ ions.',
+    geometry: 'Hexagonal Layer Lattice (CdI₂ type)',
+    bondAngle: '109.5° / 180°',
+    dipoleMoment: 'Ionic Salt',
+    atoms: [
+      { id: 'Ca1', element: 'Ca', name: 'Calcium', position: [0, 0, 0], color: '#0284c7', radius: 1.0, vdwRadius: 2.0, atomicNumber: 20, electronegativity: 1.00, valenceElectrons: 2, charge: '+2' },
+      { id: 'O1', element: 'O', name: 'Hydroxide Oxygen', position: [1.5, 0.8, 0], color: '#ef4444', radius: 0.65, vdwRadius: 1.52, atomicNumber: 8, electronegativity: 3.44, valenceElectrons: 6, charge: '-1' },
+      { id: 'H1', element: 'H', name: 'Hydrogen', position: [2.3, 1.2, 0], color: '#f8fafc', radius: 0.45, vdwRadius: 1.1, atomicNumber: 1, electronegativity: 2.20, valenceElectrons: 1 },
+      { id: 'O2', element: 'O', name: 'Hydroxide Oxygen', position: [-1.5, -0.8, 0], color: '#ef4444', radius: 0.65, vdwRadius: 1.52, atomicNumber: 8, electronegativity: 3.44, valenceElectrons: 6, charge: '-1' },
+      { id: 'H2', element: 'H', name: 'Hydrogen', position: [-2.3, -1.2, 0], color: '#f8fafc', radius: 0.45, vdwRadius: 1.1, atomicNumber: 1, electronegativity: 2.20, valenceElectrons: 1 }
+    ],
+    bonds: [
+      { from: 'Ca1', to: 'O1', order: 1, type: 'ionic', lengthAngstroms: 2.37 },
+      { from: 'Ca1', to: 'O2', order: 1, type: 'ionic', lengthAngstroms: 2.37 },
+      { from: 'O1', to: 'H1', order: 1, type: 'covalent', lengthAngstroms: 0.96 },
+      { from: 'O2', to: 'H2', order: 1, type: 'covalent', lengthAngstroms: 0.96 },
+    ]
+  },
+
+  // --- IRON(II) SULFIDE (FeS Troilite / Pyrrhotite) ---
+  fes: {
+    id: 'fes',
+    name: 'Iron(II) Sulfide',
+    formula: 'FeS',
+    category: 'ionic',
+    representationType: 'ionic_lattice',
+    description: 'Nickel-arsenide (NiAs) type hexagonal crystal lattice consisting of octahedral Fe²⁺ and trigonal prismatic S²⁻ ions.',
+    geometry: 'Hexagonal NiAs-type Ionic Lattice',
+    bondAngle: '90° / 120°',
+    dipoleMoment: 'Semiconducting Ionic Solid',
+    atoms: [
+      { id: 'Fe1', element: 'Fe', name: 'Iron', position: [0, 0, 0], color: '#ea580c', radius: 1.0, vdwRadius: 2.04, atomicNumber: 26, electronegativity: 1.83, valenceElectrons: 8, charge: '+2' },
+      { id: 'S1', element: 'S', name: 'Sulfur', position: [1.8, 0, 0], color: '#eab308', radius: 0.9, vdwRadius: 1.8, atomicNumber: 16, electronegativity: 2.58, valenceElectrons: 6, charge: '-2' },
+      { id: 'S2', element: 'S', name: 'Sulfur', position: [-1.8, 0, 0], color: '#eab308', radius: 0.9, vdwRadius: 1.8, atomicNumber: 16, electronegativity: 2.58, valenceElectrons: 6, charge: '-2' },
+      { id: 'Fe2', element: 'Fe', name: 'Iron', position: [0, 1.8, 0], color: '#ea580c', radius: 1.0, vdwRadius: 2.04, atomicNumber: 26, electronegativity: 1.83, valenceElectrons: 8, charge: '+2' }
+    ],
+    bonds: [
+      { from: 'Fe1', to: 'S1', order: 1, type: 'ionic', lengthAngstroms: 2.45 },
+      { from: 'Fe1', to: 'S2', order: 1, type: 'ionic', lengthAngstroms: 2.45 },
+      { from: 'Fe2', to: 'S1', order: 1, type: 'ionic', lengthAngstroms: 2.45 },
+    ]
+  },
+
+  // --- IONIZED PLASMA STATE ---
+  cosmic_plasma: {
+    id: 'cosmic_plasma',
+    name: 'Ionized Stellar Plasma',
+    formula: 'H⁺ + e⁻',
+    category: 'plasma',
+    representationType: 'plasma',
+    description: 'Fully ionized high-energy state where stripped protons (H⁺) and unbound relativistic electrons (e⁻) form a collective quasi-neutral plasma fluid.',
+    geometry: 'Non-equilibrium Ionized Particle Swarm',
+    bondAngle: 'N/A (Unbound / Collisional)',
+    dipoleMoment: 'Dynamic Collective Oscillation',
+    atoms: [
+      { id: 'p1', element: 'H', name: 'Thermal Proton (H⁺)', position: [-1.5, 0.5, 0], color: '#60a5fa', radius: 0.5, vdwRadius: 0.8, atomicNumber: 1, electronegativity: 0, valenceElectrons: 0, charge: '+1' },
+      { id: 'p2', element: 'H', name: 'Thermal Proton (H⁺)', position: [1.2, -0.6, 0.4], color: '#60a5fa', radius: 0.5, vdwRadius: 0.8, atomicNumber: 1, electronegativity: 0, valenceElectrons: 0, charge: '+1' },
+      { id: 'e1', element: 'He', name: 'Free Electron (e⁻)', position: [0.2, 1.4, -0.2], color: '#f43f5e', radius: 0.25, vdwRadius: 0.5, atomicNumber: 0, electronegativity: 0, valenceElectrons: 1, charge: '-1' },
+      { id: 'e2', element: 'He', name: 'Free Electron (e⁻)', position: [-0.6, -1.2, 0.3], color: '#f43f5e', radius: 0.25, vdwRadius: 0.5, atomicNumber: 0, electronegativity: 0, valenceElectrons: 1, charge: '-1' }
+    ],
+    bonds: []
+  },
+
+  // --- POLYMER CHAIN (Synthetic/Natural Macromolecule) ---
+  polymer: {
+    id: 'polymer',
+    name: 'Polymer Chain Repeating Unit',
+    formula: '[-C₂H₄-]ₙ',
+    category: 'polymer',
+    representationType: 'polymer',
+    description: 'Extended macromolecular linear backbone composed of covalently linked repeating monomer units.',
+    geometry: 'Zigzag Covalent Chain Backbone',
+    bondAngle: '109.5° (Tetrahedral sp³)',
+    dipoleMoment: '0.00 Debye',
+    atoms: [
+      { id: 'C1', element: 'C', name: 'Carbon', position: [-2.0, -0.4, 0], color: '#475569', radius: 0.72, vdwRadius: 1.7, atomicNumber: 6, electronegativity: 2.55, valenceElectrons: 4 },
+      { id: 'C2', element: 'C', name: 'Carbon', position: [-0.7, 0.4, 0], color: '#475569', radius: 0.72, vdwRadius: 1.7, atomicNumber: 6, electronegativity: 2.55, valenceElectrons: 4 },
+      { id: 'C3', element: 'C', name: 'Carbon', position: [0.7, -0.4, 0], color: '#475569', radius: 0.72, vdwRadius: 1.7, atomicNumber: 6, electronegativity: 2.55, valenceElectrons: 4 },
+      { id: 'C4', element: 'C', name: 'Carbon', position: [2.0, 0.4, 0], color: '#475569', radius: 0.72, vdwRadius: 1.7, atomicNumber: 6, electronegativity: 2.55, valenceElectrons: 4 },
+      { id: 'H1', element: 'H', name: 'Hydrogen', position: [-0.7, 1.1, 0.8], color: '#f8fafc', radius: 0.45, vdwRadius: 1.1, atomicNumber: 1, electronegativity: 2.20, valenceElectrons: 1 },
+      { id: 'H2', element: 'H', name: 'Hydrogen', position: [0.7, -1.1, 0.8], color: '#f8fafc', radius: 0.45, vdwRadius: 1.1, atomicNumber: 1, electronegativity: 2.20, valenceElectrons: 1 }
+    ],
+    bonds: [
+      { from: 'C1', to: 'C2', order: 1, type: 'covalent', lengthAngstroms: 1.54 },
+      { from: 'C2', to: 'C3', order: 1, type: 'covalent', lengthAngstroms: 1.54 },
+      { from: 'C3', to: 'C4', order: 1, type: 'covalent', lengthAngstroms: 1.54 },
+      { from: 'C2', to: 'H1', order: 1, type: 'covalent', lengthAngstroms: 1.09 },
+      { from: 'C3', to: 'H2', order: 1, type: 'covalent', lengthAngstroms: 1.09 }
+    ]
   }
 };
 
@@ -562,47 +745,68 @@ export function generateMetalLattice(symbol: string, name: string): MolecularDat
 }
 
 // Universal Resolver: Resolves any material, element, or compound into rich 3D Molecular Data
-export function getMolecularData(materialOrId: { id?: string; symbol?: string; name?: string; category?: string; state?: string }): MolecularData {
+export function getMolecularData(materialOrId: { id?: string; symbol?: string; name?: string; category?: string; state?: string; representationType?: string }): MolecularData {
   const id = (materialOrId.id || '').toLowerCase().trim();
   const symbol = (materialOrId.symbol || '').trim();
   const name = materialOrId.name || symbol || 'Sample';
+  const state = materialOrId.state || '';
+  const repType = materialOrId.representationType || '';
 
-  // 1. Check direct preset
+  // 1. Direct preset check
   if (PRESET_STRUCTURES[id]) {
     return PRESET_STRUCTURES[id];
   }
 
-  // 2. Check by formula/symbol matches
+  // 2. Hydrated Ions Check (NaCl(aq) / aqueous salts) - NEVER monatomic
+  if (
+    id === 'hcl_naoh' ||
+    id === 'nacl_aq' ||
+    id.includes('nacl_aq') ||
+    repType === 'hydrated_ions' ||
+    (state === 'Liquid' && (symbol === 'NaCl' || id.includes('salt') || name.toLowerCase().includes('sodium chloride solution')))
+  ) {
+    return PRESET_STRUCTURES.nacl_aq;
+  }
+
+  // 3. Check by formula/symbol matches
   if (symbol === 'H₂O' || symbol === 'H2O' || id.includes('water')) return PRESET_STRUCTURES.water;
   if (symbol === 'CO₂' || symbol === 'CO2' || id.includes('co2')) return PRESET_STRUCTURES.carbon_dioxide;
   if (symbol === 'CH₄' || symbol === 'CH4' || id.includes('methane')) return PRESET_STRUCTURES.methane;
+  if (symbol === 'MgO' || symbol === 'mg_o2' || id.includes('mg_o2')) return PRESET_STRUCTURES.mgo;
+  if (symbol === 'CaO' || id.includes('calcium_oxide')) return PRESET_STRUCTURES.cao;
+  if (symbol === 'Ca(OH)₂' || symbol === 'Ca(OH)2' || id.includes('calcium_hydroxide')) return PRESET_STRUCTURES.ca_oh2;
+  if (symbol === 'FeS' || id.includes('fe_s') || id === 'fes') return PRESET_STRUCTURES.fes;
   if (symbol === 'NaCl' || id.includes('salt')) return PRESET_STRUCTURES.salt;
   if (symbol === 'SiO₂' || symbol === 'SiO2' || id.includes('quartz')) return PRESET_STRUCTURES.quartz;
-  if (symbol === 'O₂' || symbol === 'O2' || (symbol === 'O' && materialOrId.state === 'Gas')) return PRESET_STRUCTURES.oxygen;
-  if (symbol === 'H₂' || symbol === 'H2' || (symbol === 'H' && materialOrId.state === 'Gas')) return PRESET_STRUCTURES.hydrogen;
-  if (symbol === 'N₂' || symbol === 'N2' || (symbol === 'N' && materialOrId.state === 'Gas')) return PRESET_STRUCTURES.nitrogen;
-  if (symbol === 'Cl₂' || symbol === 'Cl2' || (symbol === 'Cl' && materialOrId.state === 'Gas')) return PRESET_STRUCTURES.chlorine;
+  if (id.includes('diamond')) return PRESET_STRUCTURES.diamond;
+  if (id.includes('plasma') || repType === 'plasma') return PRESET_STRUCTURES.cosmic_plasma;
+  if (id.includes('polymer') || repType === 'polymer') return PRESET_STRUCTURES.polymer;
+  if (symbol === 'O₂' || symbol === 'O2' || (symbol === 'O' && state === 'Gas')) return PRESET_STRUCTURES.oxygen;
+  if (symbol === 'H₂' || symbol === 'H2' || (symbol === 'H' && state === 'Gas')) return PRESET_STRUCTURES.hydrogen;
+  if (symbol === 'N₂' || symbol === 'N2' || (symbol === 'N' && state === 'Gas')) return PRESET_STRUCTURES.nitrogen;
+  if (symbol === 'Cl₂' || symbol === 'Cl2' || (symbol === 'Cl' && state === 'Gas')) return PRESET_STRUCTURES.chlorine;
   if (symbol === 'CuO' || id.includes('cu_o2')) return PRESET_STRUCTURES.cu_o2;
   if (symbol === 'Fe₂O₃' || symbol === 'Fe2O3' || id.includes('fe_o2')) return PRESET_STRUCTURES.fe_o2;
   if (symbol === 'NaOH' || id.includes('na_h2o')) return PRESET_STRUCTURES.na_h2o;
   if (symbol === 'NaHCO₃' || symbol === 'NaHCO3' || id.includes('baking_soda')) return PRESET_STRUCTURES.baking_soda;
 
-  // 3. Check for solid metal elements -> Generate unit cell
-  const metalSymbols = ['Cu', 'Au', 'Fe', 'Ti', 'Na', 'Hg'];
+  // 4. Check for solid metal elements -> Generate unit cell
+  const metalSymbols = ['Cu', 'Au', 'Fe', 'Ti', 'Na', 'Hg', 'Ag', 'Al', 'Mg', 'K', 'Ca', 'Li'];
   if (metalSymbols.includes(symbol) || materialOrId.category === 'Metals') {
     return generateMetalLattice(symbol, name);
   }
 
-  // 4. Default: Single Element / Noble Gas / General Atom
+  // 5. Default: Single Element / Noble Gas / General Atom
   const spec = getElementSpec(symbol);
+  const isNobleGas = ['He', 'Ne', 'Ar', 'Kr', 'Xe', 'Rn'].includes(symbol) || materialOrId.category === 'Noble Gases';
   return {
     id: id || symbol.toLowerCase(),
     name,
     formula: symbol,
-    category: 'element',
-    description: `Atomic model of ${name} (${symbol}) with nucleus, quantum energy shells, and valence electrons.`,
-    geometry: 'Spherical Atomic Symmetry',
-    bondAngle: 'N/A (Monatomic)',
+    category: isNobleGas ? 'element' : (materialOrId.category === 'Crystals' ? 'crystal' : 'element'),
+    description: `Atomic model of ${name} (${symbol}) with nucleus, electron shells, and valence orbitals.`,
+    geometry: isNobleGas ? 'Spherical Atomic Symmetry (Monatomic Noble Gas)' : 'Spherical Atomic Symmetry',
+    bondAngle: 'N/A',
     dipoleMoment: '0.00 Debye',
     atoms: [
       {

@@ -24,8 +24,9 @@ import { UserProfileModal } from './components/UserProfileModal';
 import { AboutCreatorView } from './components/AboutCreatorView';
 import { MixonAITutorModal, MixonAITutorContext } from './components/MixonAITutorModal';
 import { DiscoveryModal } from './components/DiscoveryModal';
+import { RatingModal } from './components/RatingModal';
 import { AppLanguage, getInitialLanguage, saveLanguagePreference } from './utils/i18n';
-import { Sparkles, Bot, Trophy, X } from 'lucide-react';
+import { Sparkles, Bot, Trophy, X, Star } from 'lucide-react';
 import { labSound } from './utils/sound';
 import confetti from 'canvas-confetti';
 
@@ -67,6 +68,7 @@ export default function App() {
   const [isSafetyOpen, setIsSafetyOpen] = useState(false);
   const [isCustomOpen, setIsCustomOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isRatingOpen, setIsRatingOpen] = useState(false);
   const [isAiTutorOpen, setIsAiTutorOpen] = useState(false);
   const [aiTutorContext, setAiTutorContext] = useState<MixonAITutorContext>({});
   const [aiTutorPrompt, setAiTutorPrompt] = useState<string | undefined>(undefined);
@@ -159,21 +161,21 @@ export default function App() {
 
         // Challenge 1: State Change
         if (ch.targetType === 'state_change') {
-          if (result.outputState !== matA.state || result.outputState !== matB.state) {
+          if (result.hasOccurred !== false && (result.outputState !== matA.state || result.outputState !== matB.state)) {
             shouldComplete = true;
           }
         }
 
         // Challenge 3: Thermal Surge (energy >= 300)
         if (ch.targetType === 'high_energy') {
-          if (result.energyValue >= 300) {
+          if (result.hasOccurred !== false && result.energyValue >= 300) {
             shouldComplete = true;
           }
         }
 
         // Challenge 4: Oxide synthesis
         if (ch.targetType === 'oxide') {
-          if (matA.id === 'oxygen' || matB.id === 'oxygen') {
+          if (result.hasOccurred !== false && (matA.id === 'oxygen' || matB.id === 'oxygen')) {
             shouldComplete = true;
           }
         }
@@ -335,22 +337,27 @@ export default function App() {
 
   // Simulation finished event
   const handleReactionFinished = (result: ReactionResult, matA: Material, matB: Material) => {
-    // Record reaction discovery
-    if (!userProgress.discoveredReactionIds.includes(result.id)) {
-      setUserProgress(prev => {
-        const updated: UserProgress = {
-          ...prev,
-          xp: prev.xp + 30,
-          discoveredReactionIds: [...prev.discoveredReactionIds, result.id]
-        };
-        saveUserProgress(updated);
-        return updated;
-      });
+    // Record reaction discovery only if a verified chemical reaction actually occurred
+    if (result.hasOccurred !== false) {
+      if (!userProgress.discoveredReactionIds.includes(result.id)) {
+        setUserProgress(prev => {
+          const updated: UserProgress = {
+            ...prev,
+            xp: prev.xp + 30,
+            discoveredReactionIds: [...prev.discoveredReactionIds, result.id]
+          };
+          saveUserProgress(updated);
+          return updated;
+        });
 
-      // Launch DiscoveryModal for newly synthesized reaction outcome!
-      setDiscoveryResult(result);
+        // Launch DiscoveryModal for newly synthesized reaction outcome!
+        setDiscoveryResult(result);
+      } else {
+        addXP(10, 'Simulation Executed');
+      }
     } else {
-      addXP(10, 'Simulation Executed');
+      // Inactive contact or no reaction tested: award 5 XP for scientific investigation
+      addXP(5, 'Tested Non-Reactive Combination');
     }
 
     // Evaluate challenges
@@ -517,6 +524,18 @@ export default function App() {
                   <span>{lang === 'ar' ? 'عن المطور' : 'About Creator'}</span>
                 </button>
                 <span>•</span>
+                <button 
+                  onClick={() => {
+                    labSound.playClick();
+                    setIsRatingOpen(true);
+                  }}
+                  className="hover:text-amber-300 transition cursor-pointer flex items-center gap-1 text-amber-400"
+                  title="MIXON Rating"
+                >
+                  <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                  <span>{lang === 'ar' ? 'تقييم المنصة' : 'Rate Lab'}</span>
+                </button>
+                <span>•</span>
                 <button onClick={() => setIsSafetyOpen(true)} className="hover:text-sky-200 transition cursor-pointer">
                   {lang === 'ar' ? 'إرشادات السلامة' : 'Safety Protocol'}
                 </button>
@@ -583,6 +602,12 @@ export default function App() {
         onOpenCreator={() => {
           setActiveTab('creator');
         }}
+        lang={lang}
+      />
+
+      <RatingModal
+        isOpen={isRatingOpen}
+        onClose={() => setIsRatingOpen(false)}
         lang={lang}
       />
 

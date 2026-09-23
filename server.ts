@@ -34,6 +34,39 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
+// Scientific Rating System Endpoints
+import { globalRatingEngine, validateRating } from "./src/server/ratingService";
+
+app.get("/api/ratings", (req, res) => {
+  const userId = typeof req.query.userId === "string" ? req.query.userId : undefined;
+  const stats = globalRatingEngine.getStats(userId);
+  res.json(stats);
+});
+
+app.post("/api/ratings", (req, res) => {
+  const { rating, userId } = req.body || {};
+
+  if (!userId || typeof userId !== "string" || !userId.trim()) {
+    return res.status(400).json({
+      error: "Missing or invalid client/user identifier."
+    });
+  }
+
+  const validation = validateRating(rating);
+  if (!validation.valid) {
+    return res.status(400).json({
+      error: validation.error
+    });
+  }
+
+  const result = globalRatingEngine.submitRating(userId, rating);
+  if (!result.success) {
+    return res.status(400).json({ error: result.error });
+  }
+
+  return res.json(result.state);
+});
+
 // Helper to automatically detect language from user input
 function detectLanguageFromText(text: string, fallbackLang: string = "en"): "ar" | "en" {
   if (!text || !text.trim()) {
@@ -99,9 +132,9 @@ CRITICAL DIRECTIVES:
     const contextSummary = `
 CURRENT LAB CONTEXT:
 - Active Communication Language: ${targetLangName}
-- Selected Material A: ${ctx.materialA ? `${ctx.materialA.name} (${ctx.materialA.symbol}, State: ${ctx.materialA.state}, Category: ${ctx.materialA.category})` : "None"}
-- Selected Material B: ${ctx.materialB ? `${ctx.materialB.name} (${ctx.materialB.symbol}, State: ${ctx.materialB.state}, Category: ${ctx.materialB.category})` : "None"}
-- Last Reaction Result: ${ctx.currentResult ? `${ctx.currentResult.outputName} (${ctx.currentResult.outputFormula}, Type: ${ctx.currentResult.reactionType}, Energy: ${ctx.currentResult.energyChange})` : "None"}
+- Selected Material A: ${ctx.materialA ? `${ctx.materialA.name} (${ctx.materialA.symbol}, State: ${ctx.materialA.state}, Category: ${ctx.materialA.category}, Rarity: ${ctx.materialA.rarity || 'Common'})` : "None"}
+- Selected Material B: ${ctx.materialB ? `${ctx.materialB.name} (${ctx.materialB.symbol}, State: ${ctx.materialB.state}, Category: ${ctx.materialB.category}, Rarity: ${ctx.materialB.rarity || 'Common'})` : "None"}
+- Last Reaction Result: ${ctx.currentResult ? `${ctx.currentResult.outputName} (${ctx.currentResult.outputFormula}, Type: ${ctx.currentResult.reactionType}, Energy: ${ctx.currentResult.energyChange}, Has Occurred: ${ctx.currentResult.hasOccurred !== false}, ${ctx.currentResult.noReactionReason ? `Inactivity Reason: ${ctx.currentResult.noReactionReason}` : ''})` : "None"}
 - Chamber Temperature: ${ctx.temperature != null ? `${ctx.temperature} °C` : "25 °C"}
 - Chamber Pressure: ${ctx.pressure != null ? `${ctx.pressure} atm` : "1 atm"}
 - Simulation Phase: ${ctx.simulationPhase || "idle"}

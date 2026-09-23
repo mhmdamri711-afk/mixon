@@ -4,6 +4,7 @@ import { getRankFromXP } from '../data/challengesData';
 import { Trophy, X, Award, Atom, FlaskConical, Sparkles, CheckCircle2 } from 'lucide-react';
 import { labSound } from '../utils/sound';
 import { AppLanguage } from '../utils/i18n';
+import { RatingSystem } from './RatingSystem';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -102,6 +103,9 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               <CheckCircle2 className="w-5 h-5 text-emerald-400" />
             </div>
           </div>
+
+          {/* Platform Scientific Rating System */}
+          <RatingSystem lang={lang} compact />
 
         </div>
 
