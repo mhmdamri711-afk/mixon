@@ -7,6 +7,14 @@
     "directory": "./dist",
     "binding": "ASSETS"
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "mixon-ratings",
+      "database_id": "d18d18c1-15fa-45b2-ba93-909a755b6600",
+      "migrations_dir": "migrations"
+    }
+  ],
   "observability": {
     "enabled": true
   }
