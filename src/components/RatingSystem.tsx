@@ -152,7 +152,7 @@ export const RatingSystem: React.FC<RatingSystemProps> = ({
             {lang === 'ar' ? 'عدد التقييمات' : 'Number of Ratings'}
           </div>
           <div className="font-display font-black text-lg sm:text-2xl text-sky-200 mt-1">
-            {stats.totalRatings.toLocaleString()}
+            {(stats?.totalRatings ?? 0).toLocaleString()}
             <span className="text-xs font-mono text-sky-500 font-normal ml-1">
               {lang === 'ar' ? 'تقييم' : 'ratings'}
             </span>
@@ -165,7 +165,7 @@ export const RatingSystem: React.FC<RatingSystemProps> = ({
             {lang === 'ar' ? 'مجموع النقاط' : 'Total Rating Points'}
           </div>
           <div className="font-display font-black text-lg sm:text-2xl text-sky-200 mt-1">
-            {stats.totalPoints.toLocaleString()}
+            {(stats?.totalPoints ?? 0).toLocaleString()}
             <span className="text-xs font-mono text-sky-500 font-normal ml-1">
               {lang === 'ar' ? 'نقطة' : 'pts'}
             </span>

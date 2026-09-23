@@ -71,9 +71,14 @@ export async function fetchLiveRatingStats(): Promise<RatingState> {
   try {
     const res = await fetch(`/api/ratings?userId=${encodeURIComponent(userId)}`);
     if (res.ok) {
-      const data: RatingState = await res.json();
-      saveCachedRatingState(data);
-      return data;
+      const data: any = await res.json();
+      if (data && typeof data.totalRatings === 'number' && typeof data.totalPoints === 'number') {
+        const validatedData: RatingState = data;
+        saveCachedRatingState(validatedData);
+        return validatedData;
+      } else {
+        console.warn('MIXON Rating: API response is not a valid RatingState:', data);
+      }
     }
   } catch (err) {
     console.warn('MIXON Rating: Live sync unavailable, using local cached store:', err);
@@ -132,17 +137,16 @@ export async function submitLiveRating(rating: number): Promise<{ success: boole
     });
 
     if (res.ok) {
-      const serverState: RatingState = await res.json();
-      saveCachedRatingState(serverState);
-      return { success: true, state: serverState };
-    } else {
-      const errorData = await res.json().catch(() => ({}));
-      return {
-        success: true, // Still kept local optimistic state
-        state: optimisticState,
-        error: errorData.error
-      };
+      const serverState: any = await res.json();
+      if (serverState && typeof serverState.totalRatings === 'number' && typeof serverState.totalPoints === 'number') {
+        const validatedState: RatingState = serverState;
+        saveCachedRatingState(validatedState);
+        return { success: true, state: validatedState };
+      }
     }
+    
+    // Return local optimistic state if server-side response is invalid or is the mock API placeholder
+    return { success: true, state: optimisticState };
   } catch (e) {
     // Return optimistic state if server is offline or in purely static mode
     return { success: true, state: optimisticState };

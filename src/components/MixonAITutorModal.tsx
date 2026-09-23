@@ -169,7 +169,7 @@ export const MixonAITutorModal: React.FC<MixonAITutorModalProps> = ({
 
       let aiReply = '';
       if (res.ok) {
-        const data = await res.json().catch(() => null);
+        const data: any = await res.json().catch(() => null);
         aiReply = data?.reply || '';
         if (data?.detectedLanguage) {
           setConversationLang(data.detectedLanguage);
