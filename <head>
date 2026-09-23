@@ -16,6 +16,9 @@
 
     <link rel="canonical" href="https://mixon.click/" />
 
+    <!-- MIXON Site Icon -->
+    <link rel="icon" type="image/jpeg" href="/mixon-logo.jpg" />
+
     <meta property="og:title" content="MIXON Digital Laboratory" />
     <meta
       property="og:description"
@@ -24,12 +27,17 @@
     <meta property="og:url" content="https://mixon.click/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="MIXON Digital Laboratory" />
+    <meta property="og:image" content="https://mixon.click/mixon-logo.jpg" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="MIXON Digital Laboratory" />
     <meta
       name="twitter:description"
       content="An interactive digital laboratory for exploring chemistry, matter, materials, and simulated reactions."
+    />
+    <meta
+      name="twitter:image"
+      content="https://mixon.click/mixon-logo.jpg"
     />
 
     <script type="application/ld+json">
