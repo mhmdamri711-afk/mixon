@@ -4,22 +4,21 @@ const CLIENT_ID_KEY = 'mixon_client_user_id';
 const RATING_CACHE_KEY = 'mixon_rating_cache';
 const USER_RATING_KEY = 'mixon_user_rating';
 
-// Safely generate or retrieve client user identity
 export function getClientUserId(): string {
   try {
     let id = localStorage.getItem(CLIENT_ID_KEY);
+
     if (!id) {
-      // Structured client-session identity; can easily be mapped to authenticated user accounts
       id = `client_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 9)}`;
       localStorage.setItem(CLIENT_ID_KEY, id);
     }
+
     return id;
   } catch {
     return 'client_ephemeral_session';
   }
 }
 
-// Default initial state
 const DEFAULT_STATE: RatingState = {
   totalRatings: 0,
   totalPoints: 0,
@@ -27,7 +26,6 @@ const DEFAULT_STATE: RatingState = {
   userRating: null
 };
 
-// Load cached state from local storage
 export function loadCachedRatingState(): RatingState {
   try {
     const cached = localStorage.getItem(RATING_CACHE_KEY);
@@ -36,59 +34,104 @@ export function loadCachedRatingState(): RatingState {
 
     if (cached) {
       const parsed = JSON.parse(cached);
+
       return {
         totalRatings: Number(parsed.totalRatings) || 0,
         totalPoints: Number(parsed.totalPoints) || 0,
         averageRating: Number(parsed.averageRating) || 0,
-        userRating: userRating || parsed.userRating || null
+        userRating:
+          userRating !== null && Number.isInteger(userRating)
+            ? userRating
+            : parsed.userRating ?? null
       };
     }
-    if (userRating) {
+
+    if (userRating !== null && Number.isInteger(userRating)) {
       return {
-        totalRatings: 1,
-        totalPoints: userRating,
-        averageRating: userRating,
+        totalRatings: 0,
+        totalPoints: 0,
+        averageRating: 0,
         userRating
       };
     }
   } catch {}
+
   return DEFAULT_STATE;
 }
 
-// Save state to local cache
 export function saveCachedRatingState(state: RatingState): void {
   try {
     localStorage.setItem(RATING_CACHE_KEY, JSON.stringify(state));
+
     if (state.userRating !== null) {
       localStorage.setItem(USER_RATING_KEY, state.userRating.toString());
     }
   } catch {}
 }
 
-// Fetch live rating statistics from server API with cache fallback
 export async function fetchLiveRatingStats(): Promise<RatingState> {
   const userId = getClientUserId();
+
   try {
-    const res = await fetch(`/api/ratings?userId=${encodeURIComponent(userId)}`);
+    const cacheBuster = Date.now();
+
+    const res = await fetch(
+      `/api/ratings?userId=${encodeURIComponent(userId)}&_=${cacheBuster}`,
+      {
+        method: 'GET',
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      }
+    );
+
     if (res.ok) {
       const data: any = await res.json();
-      if (data && typeof data.totalRatings === 'number' && typeof data.totalPoints === 'number') {
-        const validatedData: RatingState = data;
+
+      if (
+        data &&
+        typeof data.totalRatings === 'number' &&
+        typeof data.totalPoints === 'number' &&
+        typeof data.averageRating === 'number'
+      ) {
+        const validatedData: RatingState = {
+          totalRatings: data.totalRatings,
+          totalPoints: data.totalPoints,
+          averageRating: data.averageRating,
+          userRating:
+            typeof data.userRating === 'number'
+              ? data.userRating
+              : null
+        };
+
         saveCachedRatingState(validatedData);
         return validatedData;
-      } else {
-        console.warn('MIXON Rating: API response is not a valid RatingState:', data);
       }
+
+      console.warn(
+        'MIXON Rating: API response is not a valid RatingState:',
+        data
+      );
     }
   } catch (err) {
-    console.warn('MIXON Rating: Live sync unavailable, using local cached store:', err);
+    console.warn(
+      'MIXON Rating: Live sync unavailable, using local cached store:',
+      err
+    );
   }
+
   return loadCachedRatingState();
 }
 
-// Submit a new rating
-export async function submitLiveRating(rating: number): Promise<{ success: boolean; state: RatingState; error?: string }> {
-  // Validate rating
+export async function submitLiveRating(
+  rating: number
+): Promise<{
+  success: boolean;
+  state: RatingState;
+  error?: string;
+}> {
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
     return {
       success: false,
@@ -101,22 +144,23 @@ export async function submitLiveRating(rating: number): Promise<{ success: boole
   const previousState = loadCachedRatingState();
   const oldUserRating = previousState.userRating;
 
-  // Optimistic calculation for instant UI update
   let optimisticTotalRatings = previousState.totalRatings;
   let optimisticTotalPoints = previousState.totalPoints;
 
   if (oldUserRating !== null) {
-    // User is updating their existing rating
-    optimisticTotalPoints = optimisticTotalPoints - oldUserRating + rating;
+    optimisticTotalPoints =
+      optimisticTotalPoints - oldUserRating + rating;
   } else {
-    // New user rating
     optimisticTotalRatings += 1;
     optimisticTotalPoints += rating;
   }
 
-  const optimisticAverage = optimisticTotalRatings > 0
-    ? Math.round((optimisticTotalPoints / optimisticTotalRatings) * 10) / 10
-    : 0;
+  const optimisticAverage =
+    optimisticTotalRatings > 0
+      ? Math.round(
+          (optimisticTotalPoints / optimisticTotalRatings) * 10
+        ) / 10
+      : 0;
 
   const optimisticState: RatingState = {
     totalRatings: optimisticTotalRatings,
@@ -125,30 +169,58 @@ export async function submitLiveRating(rating: number): Promise<{ success: boole
     userRating: rating
   };
 
-  // Immediately persist locally
   saveCachedRatingState(optimisticState);
 
-  // Sync with backend API
   try {
     const res = await fetch('/api/ratings', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, rating })
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      },
+      body: JSON.stringify({
+        userId,
+        rating
+      })
     });
 
     if (res.ok) {
       const serverState: any = await res.json();
-      if (serverState && typeof serverState.totalRatings === 'number' && typeof serverState.totalPoints === 'number') {
-        const validatedState: RatingState = serverState;
+
+      if (
+        serverState &&
+        typeof serverState.totalRatings === 'number' &&
+        typeof serverState.totalPoints === 'number' &&
+        typeof serverState.averageRating === 'number'
+      ) {
+        const validatedState: RatingState = {
+          totalRatings: serverState.totalRatings,
+          totalPoints: serverState.totalPoints,
+          averageRating: serverState.averageRating,
+          userRating:
+            typeof serverState.userRating === 'number'
+              ? serverState.userRating
+              : rating
+        };
+
         saveCachedRatingState(validatedState);
-        return { success: true, state: validatedState };
+
+        return {
+          success: true,
+          state: validatedState
+        };
       }
     }
-    
-    // Return local optimistic state if server-side response is invalid or is the mock API placeholder
-    return { success: true, state: optimisticState };
-  } catch (e) {
-    // Return optimistic state if server is offline or in purely static mode
-    return { success: true, state: optimisticState };
+
+    return {
+      success: true,
+      state: optimisticState
+    };
+  } catch {
+    return {
+      success: true,
+      state: optimisticState
+    };
   }
 }
