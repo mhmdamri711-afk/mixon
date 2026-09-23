@@ -7,84 +7,114 @@ export interface Env {
   DB: D1Database;
 }
 
+const API_HEADERS = {
+  "content-type": "application/json",
+  "Access-Control-Allow-Origin": "*",
+  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+  "Pragma": "no-cache",
+  "Expires": "0",
+};
+
+const ERROR_HEADERS = {
+  "content-type": "application/json",
+  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+  "Pragma": "no-cache",
+  "Expires": "0",
+};
+
+function jsonResponse(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: status === 200 ? API_HEADERS : ERROR_HEADERS,
+  });
+}
+
+async function getRatingStats(
+  env: Env,
+  userId?: string
+): Promise<{
+  totalRatings: number;
+  totalPoints: number;
+  averageRating: number;
+  userRating: number | null;
+}> {
+  const { results } = await env.DB
+    .prepare("SELECT userId, rating FROM ratings")
+    .all<{ userId: string; rating: number }>();
+
+  const rows = results || [];
+
+  const totalRatings = rows.length;
+  const totalPoints = rows.reduce((acc, curr) => acc + curr.rating, 0);
+
+  const averageRating =
+    totalRatings > 0
+      ? Math.round((totalPoints / totalRatings) * 10) / 10
+      : 0;
+
+  let userRating: number | null = null;
+
+  if (userId) {
+    const userRow = rows.find((row) => row.userId === userId);
+
+    if (userRow) {
+      userRating = userRow.rating;
+    }
+  }
+
+  return {
+    totalRatings,
+    totalPoints,
+    averageRating,
+    userRating,
+  };
+}
+
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext
+  ): Promise<Response> {
     const url = new URL(request.url);
 
-    // 1. Backend APIs routing support
+    // 1. Ratings API
     if (url.pathname === "/api/ratings") {
+      // GET current ratings directly from D1
       if (request.method === "GET") {
         const userId = url.searchParams.get("userId") || undefined;
 
         try {
-          const { results } = await env.DB
-            .prepare("SELECT userId, rating FROM ratings")
-            .all<{ userId: string; rating: number }>();
+          const stats = await getRatingStats(env, userId);
 
-          const rows = results || [];
-
-          const totalRatings = rows.length;
-          const totalPoints = rows.reduce((acc, curr) => acc + curr.rating, 0);
-          const averageRating =
-            totalRatings > 0
-              ? Math.round((totalPoints / totalRatings) * 10) / 10
-              : 0;
-
-          let userRating: number | null = null;
-
-          if (userId) {
-            const userRow = rows.find((r) => r.userId === userId);
-            if (userRow) {
-              userRating = userRow.rating;
-            }
-          }
-
-          return new Response(
-            JSON.stringify({
-              totalRatings,
-              totalPoints,
-              averageRating,
-              userRating,
-            }),
-            {
-              status: 200,
-              headers: {
-                "content-type": "application/json",
-                "Access-Control-Allow-Origin": "*",
-              },
-            }
-          );
+          return jsonResponse(stats, 200);
         } catch (dbErr: any) {
-          return new Response(
-            JSON.stringify({
-              error: dbErr.message || "Database error",
-            }),
+          return jsonResponse(
             {
-              status: 500,
-              headers: {
-                "content-type": "application/json",
-              },
-            }
+              error: dbErr?.message || "Database error",
+            },
+            500
           );
         }
       }
 
+      // POST / update rating
       if (request.method === "POST") {
         try {
           const body: any = await request.json().catch(() => ({}));
+
           const { userId, rating } = body;
 
-          if (!userId || typeof userId !== "string" || !userId.trim()) {
-            return new Response(
-              JSON.stringify({
-                error: "Missing or invalid client/user identifier.",
-              }),
+          if (
+            !userId ||
+            typeof userId !== "string" ||
+            !userId.trim()
+          ) {
+            return jsonResponse(
               {
-                status: 400,
-                headers: {
-                  "content-type": "application/json",
-                },
-              }
+                error: "Missing or invalid client/user identifier.",
+              },
+              400
             );
           }
 
@@ -95,22 +125,18 @@ export default {
             cleanRating < 1 ||
             cleanRating > 5
           ) {
-            return new Response(
-              JSON.stringify({
-                error: "Rating must be an integer between 1 and 5.",
-              }),
+            return jsonResponse(
               {
-                status: 400,
-                headers: {
-                  "content-type": "application/json",
-                },
-              }
+                error: "Rating must be an integer between 1 and 5.",
+              },
+              400
             );
           }
 
           const cleanUserId = userId.trim();
           const now = Date.now();
 
+          // Insert new rating or update existing user's rating.
           await env.DB.prepare(
             `INSERT INTO ratings (userId, rating, updatedAt)
              VALUES (?1, ?2, ?3)
@@ -120,79 +146,44 @@ export default {
             .bind(cleanUserId, cleanRating, now)
             .run();
 
-          const { results } = await env.DB
-            .prepare("SELECT userId, rating FROM ratings")
-            .all<{ userId: string; rating: number }>();
+          // Always calculate the aggregate again directly from D1.
+          const stats = await getRatingStats(env, cleanUserId);
 
-          const rows = results || [];
-
-          const totalRatings = rows.length;
-          const totalPoints = rows.reduce((acc, curr) => acc + curr.rating, 0);
-          const averageRating =
-            totalRatings > 0
-              ? Math.round((totalPoints / totalRatings) * 10) / 10
-              : 0;
-
-          let userRating: number | null = null;
-
-          const userRow = rows.find((r) => r.userId === cleanUserId);
-
-          if (userRow) {
-            userRating = userRow.rating;
-          }
-
-          return new Response(
-            JSON.stringify({
-              totalRatings,
-              totalPoints,
-              averageRating,
-              userRating,
-            }),
-            {
-              status: 200,
-              headers: {
-                "content-type": "application/json",
-                "Access-Control-Allow-Origin": "*",
-              },
-            }
-          );
+          return jsonResponse(stats, 200);
         } catch (dbErr: any) {
-          return new Response(
-            JSON.stringify({
-              error: dbErr.message || "Database error",
-            }),
+          return jsonResponse(
             {
-              status: 500,
-              headers: {
-                "content-type": "application/json",
-              },
-            }
+              error: dbErr?.message || "Database error",
+            },
+            500
           );
         }
       }
-    }
 
-    if (url.pathname.startsWith("/api/")) {
-      return new Response(
-        JSON.stringify({
-          status: "ok",
-          message: "MIXON API is active",
-        }),
+      return jsonResponse(
         {
-          status: 200,
-          headers: {
-            "content-type": "application/json",
-          },
-        }
+          error: "Method not allowed.",
+        },
+        405
       );
     }
 
-    // 2. Fetch the requested static asset
+    // 2. Other API routes
+    if (url.pathname.startsWith("/api/")) {
+      return jsonResponse(
+        {
+          status: "ok",
+          message: "MIXON API is active",
+        },
+        200
+      );
+    }
+
+    // 3. Static assets
     const response = await env.ASSETS.fetch(request);
 
-    // 3. Only use SPA fallback for routes without a file extension.
-    //    Static files such as JPG, PNG, SVG, CSS, JS, etc. must return
-    //    their real response instead of being replaced by index.html.
+    // 4. SPA fallback only for routes without file extensions.
+    //    JPG, PNG, SVG, CSS, JS, etc. must return their actual files.
     if (
       response.status === 404 &&
       !url.pathname.split("/").pop()?.includes(".")
